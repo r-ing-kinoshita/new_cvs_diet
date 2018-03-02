@@ -1,0 +1,38 @@
+<!-- コンビニ一覧画面 -->
+<ons-page id="cvslist"  ng-controller="shopController as ctrl">
+    <ons-toolbar>
+        <div class="left"><ons-back-button></ons-back-button></div>
+        <div class="center">コンビニ一覧</div>
+    </ons-toolbar>
+    <div id="shop_list">
+        <ons-list>
+            <ons-list-item tappable class="cvs_item" ng-repeat="item in ctrl.items">
+                <div class="list_left" style="height:13vh;width:40vw;">
+                    <img src="{{item.icon}}" style="height:100%;">
+                </div>
+                <div> {{item.name}}</div>
+            </ons-list-item>
+            
+            <ons-list-item tappable class="cvs_item">
+                <div class="list_left" style="height:13vh;width:40vw;">
+                    <img src="img/cvs/seveneleven.png" style="height:100%;">
+                </div>
+                <div>セブンイレブン</div>
+            </ons-list-item>
+            <ons-list-item tappable class="cvs_item">
+                <div class="list_left" style="height:13vh;width:40vw;">
+                    <img src="img/cvs/lawson.png" style="height:100%;">
+                </div>
+                <div>ローソン</div>
+            </ons-list-item>
+            <ons-list-item tappable class="cvs_item">
+                <div class="list_left" style="height:13vh;width:40vw;">
+                    <img src="img/cvs/ministop.png" style="height:100%;">
+                </div>
+                <div>ミニストップ</div>
+            </ons-list-item>
+        
+        </ons-list>
+    </div>
+</ons-page>
+

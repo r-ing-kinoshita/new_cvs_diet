@@ -1,0 +1,278 @@
+<!DOCTYPE HTML>
+<html ng-app="myApp">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
+    <link rel="stylesheet" href="components/loader.css">
+    <link rel="stylesheet" href="lib/onsenui/css/onsenui.css">
+    <link rel="stylesheet" href="lib/onsenui/css/onsen-css-components.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="components/loader.js"></script>
+    <script src="lib/angular/angular.min.js"></script>
+    <script src="lib/onsenui/js/onsenui.min.js"></script>
+    <script src="lib/onsenui/js/angular-onsenui.min.js"></script>
+    <script src="js/class.js"></script>
+    <script src="js/diet-db.js"></script>
+    <style>
+        td {border: solid 1px #eeeeee}
+    </style>
+    <!-- nend広告用スタイル設定 -->
+    <style>
+        #div_nend {
+            position: absolute;
+            bottom: 0px;
+            width: 100%;
+            height: 50px;
+            z-index: 99;
+        }
+    </style>
+    <script>
+          
+        // nend広告表示用設定
+        var nend_params = {"media":52387,"site":287839,"spot":845786,"type":1,"oriented":3};
+
+        //ons.bootstrap();
+        //var app = angular.module('myApp', ["onsen"]);
+        var app = ons.bootstrap("myApp", ["onsen"]);
+        app.controller('shopController', function() {
+            this.items = selectShopList();
+            this.data = "こっち";
+        });
+        
+        app.controller('TestController', function($scope) {
+            $scope.hoge = "hoge";
+        });
+        
+        // nend広告表示用のディレクティブを定義する
+//        app.directive('nendAdInjector', function () {
+//            return {
+//                link : function(scope, element) {
+//                    var nendOriginalElem = angular.element(document.querySelector('#nend_wrapper'));
+//                    element.replaceWith(nendOriginalElem.clone());
+//                }
+//            }
+//        });
+        
+        ons.ready(function() {
+            //alert('アプリがはじまるよ～');
+            initial_db();
+            
+            // nend広告表示用設定
+            var nendOriginalElem = angular.element(document.querySelector('#nend_wrapper'));
+            var nendInjectElem1 = angular.element(document.querySelector('#new_nend_wrapper'));
+            nendInjectElem1.replaceWith(nendOriginalElem.clone());
+        });
+    
+        // Page init event
+        document.addEventListener('init', function(event)
+        {
+            var page = event.target;
+
+            if (page.matches('#home')) {
+
+                // コンビニ一覧画面に遷移
+                page.querySelector('#move_cvslist').onclick = function() {
+                    var sendParam = {
+                        data: {
+                            item : {
+                                name: "hoge",
+                                value: "test"
+                            }
+                        }
+                    };
+                    document.querySelector('#navigator').pushPage('cvslist.html', sendParam);
+                };
+                // 分類一覧画面に遷移
+                page.querySelector('#move_classlist').onclick = function() {
+                    document.querySelector('#navigator').pushPage('classlist.html');
+                };
+            } else if (page.matches('#cvslist')) {
+                alert("data=" + page.data.item.name + ":" + page.data.item.value);
+                // コンビニ選択時に商品一覧画面に遷移
+                var cvslist = document.getElementsByClassName("cvs_item");
+                for(var i = 0; i < cvslist.length; i++){
+                    cvslist[i].onclick = function() {
+                        document.querySelector('#navigator').pushPage('itemlist.html');
+                    };
+                }
+                
+            } else if (page.matches('#classlist')) {
+                // 分類選択時に商品一覧画面に遷移
+                var classlist = document.getElementsByClassName("class_item");
+                for(var i = 0; i < classlist.length; i++){
+                    classlist[i].onclick = function() {
+                        document.querySelector('#navigator').pushPage('itemlist.html');
+                    };
+                }
+                
+            } else if (page.matches('#itemlist')) {
+                // 商品選択時にポップアップ画面を表示
+                var itemList = document.getElementsByClassName("product_item");
+                for(var i = 0; i < itemList.length; i++) {
+                    switch(i) {
+                        case 0: 
+                            itemList[i].onclick = function() {
+                                // onsenを利用したダイアログ表示
+                                ons.notification.confirm({
+                                    message: "ソート順指定",
+                                    buttonLabels: ["糖質", "カロリー", "値段"],
+                                    callback: function(index) {
+                                        // 押されたボタンを表示
+                                        ons.notification.alert({ message: "押したボタン：" + index });
+                                    }
+                                });
+                            };
+                            break;
+                        case 1:
+                            itemList[i].onclick = function() {
+                                alert(2);
+                            };
+                            break;
+                        case 2:
+                            itemList[i].onclick = function() {
+                                // ダイアログのボタンにイベントを設定
+                                var btnList = document.getElementsByClassName('dialog_btn');
+                                for(var i = 0; i < btnList.length; i++) {
+                                    btnList[i].onclick = function() {
+                                        // ダイアログを閉じる
+                                        document.getElementById('action-sheet-dialog').hide();
+                                    }
+                                }
+                                // ダイアログを表示
+                                document.getElementById('action-sheet-dialog').show();
+                            };
+                            break;
+                    }
+                }
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <ons-navigator id="navigator" page="home.html">
+    </ons-navigator>
+    <!-- nend広告表示用設定 -->
+    <div id="div_nend"><script type="text/javascript" src="http://js1.nend.net/js/nendAdLoader.js"></script></div>
+
+    <!-- ホーム画面 -->
+    <template id="home.html">
+        <ons-page id="home">
+            {{1+1}}
+            <!--<ons-toolbar>
+                <div class="center">ホーム</div>
+            </ons-toolbar>-->
+            <div style="width:90vw; margin:auto;"> 
+                <img src="img/home.png" alt="" style="width:100%;margin-top:20px;" />
+                <ons-button id="move_cvslist" modifier="large" style="margin-top:20px;">コンビニから探す</ons-button>
+                <ons-button id="move_classlist" modifier="large" style="margin-top:20px;">分類から探す</ons-button>
+            </div>
+        </ons-page>
+    </template>
+
+
+    <!-- 商品分類一覧画面 -->
+    <template id="classlist.html">
+        <ons-page id="classlist" ng-controller="TestController">
+            {{hoge}}
+            <span ng-bind="hoge"></span>
+            <ons-toolbar>
+                <div class="left"><ons-back-button></ons-back-button></div>
+                <div class="center">商品分類一覧</div>
+            </ons-toolbar>
+            <ons-list>
+                <ons-list-item tappable class="class_item">
+                    <div style="width:100%; text-align:center;">お弁当</div>
+                </ons-list-item>
+                <ons-list-item tappable class="class_item">
+                    <div style="width:100%; text-align:center;">おつまみ</div>
+                </ons-list-item>
+                <ons-list-item tappable class="class_item">
+                    <div style="width:100%; text-align:center;">お酒</div>
+                </ons-list-item>
+                <ons-list-item tappable class="class_item">
+                    <div style="width:100%; text-align:center;">飲み物</div>
+                </ons-list-item>
+                <ons-list-item tappable class="class_item">
+                    <div style="width:100%; text-align:center;">お菓子</div>
+                </ons-list-item>
+                <ons-list-item tappable class="class_item">
+                    <div style="width:100%; text-align:center;">サラダ</div>
+                </ons-list-item>
+            </ons-list>
+        </ons-page>
+    </template>
+    
+    <!-- 商品一覧画面 -->
+    <template id="itemlist.html">
+        <ons-page id="itemlist">
+            <ons-toolbar>
+                <div class="left"><ons-back-button></ons-back-button></div>
+                <div class="center">商品一覧</div>
+            </ons-toolbar>
+            
+            <ons-list>
+                <ons-list-item tappable class="product_item">
+                    <table>
+                        <tr>
+                            <td rowspan="3" style="width:20vw;"><img src="img/item/bento.png" style="width:20vw;"/></td>
+                            <td colspan="2" style="width:70vw;">おいしいお弁当</td>
+                            <td style="width:10vw;"><img src="img/cvs/lawson.png" style="width:10vw;"></td>
+                        </tr>
+                        <tr>
+                        	<td style="width:40vw;">1000.0kcal</td>
+                            <td colspan="2" rowspan="2">30.0g</td>
+                    	</tr>
+                        <tr>
+                            <td>600円</td>
+                    	</tr>
+                    </table>
+                </ons-list-item>
+                <ons-list-item tappable class="product_item">
+                    <table>
+                        <tr>
+                            <td rowspan="3" style="width:20vw;"><img src="img/item/bread.png" style="width:20vw;"/></td>
+                            <td colspan="2" style="width:70vw;">おいしいおパン</td>
+                            <td style="width:10vw;"><img src="img/cvs/seveneleven.png" style="width:10vw;"></td>
+                    	</tr>
+                        <tr>
+                        	<td style="width:40vw;">800.0kcal</td>
+                            <td colspan="2" rowspan="2">20.0g</td>
+                    	</tr>
+                        <tr>
+                            <td>400円</td>
+                    	</tr>
+                    </table>
+                </ons-list-item>
+                <ons-list-item tappable class="product_item">
+                    <table>
+                        <tr>
+                    		<td rowspan="3" style="width:20vw;"><img src="img/item/drink.png" style="width:20vw;"/></td>
+                            <td colspan="2" style="width:70vw;">ダイエットドリンク</td>
+                            <td style="width:10vw;"><img src="img/cvs/ministop.png" style="width:10vw;"></td>
+                    	</tr>
+                        <tr>
+                        	<td style="width:40vw;">0.0kcal</td>
+                            <td colspan="2" rowspan="2">10.0g</td>
+                    	</tr>
+                        <tr>
+                            <td>200円</td>
+                    	</tr>
+                    </table>
+                </ons-list-item>
+            </ons-list>
+            <!-- ダイアログ表示用 -->
+            <ons-action-sheet id="action-sheet-dialog" cancelable>
+              <ons-action-sheet-button class="dialog_btn" icon="md-square-o">Action 1</ons-action-sheet-button>
+              <ons-action-sheet-button class="dialog_btn" icon="md-square-o">Action 2</ons-action-sheet-button>
+              <ons-action-sheet-button class="dialog_btn" modifier="destructive" icon="md-square-o">Action 3</ons-action-sheet-button>
+              <ons-action-sheet-button class="dialog_btn" icon="md-square-o">Cancel</ons-action-sheet-button>
+            </ons-action-sheet>
+        </ons-page>
+    </template>
+
+</body>
+
+</html>
