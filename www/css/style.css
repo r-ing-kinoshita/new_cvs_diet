@@ -1,2 +1,12 @@
 /**/
 
+/**
+ * nend広告用スタイル設定
+ */
+#div_nend {
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    height: 50px;
+    z-index: 99;
+}

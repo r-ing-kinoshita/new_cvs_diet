@@ -18,16 +18,7 @@
     <style>
         td {border: solid 1px #eeeeee}
     </style>
-    <!-- nend広告用スタイル設定 -->
-    <style>
-        #div_nend {
-            position: absolute;
-            bottom: 0px;
-            width: 100%;
-            height: 50px;
-            z-index: 99;
-        }
-    </style>
+
     <script>
           
         // nend広告表示用設定
@@ -36,13 +27,74 @@
         //ons.bootstrap();
         //var app = angular.module('myApp', ["onsen"]);
         var app = ons.bootstrap("myApp", ["onsen"]);
-        app.controller('shopController', function() {
-            this.items = selectShopList();
-            this.data = "こっち";
-        });
+        
+        // コンビニ一覧コントローラ
+        var _selectedShopList; // TODO:微妙。「コンビニから探す」ボタンを押下⇒コンビニ情報select⇒コンビニ一覧画面に渡すのをどうやるのが正解なんだろう。。
+        app.controller('shopController', function($scope) {
+            this.items = _selectedShopList;
+            });
+        
+        // 商品分類一覧コントローラ
+        var _selectedClassList; // TODO:微妙。「商品分類から探す」ボタンを押下⇒商品分類情報select⇒コンビニ一覧画面に渡すのをどうやるのが正解なんだろう。。
+        app.controller('classController', function($scope) {
+            this.items = _selectedClassList;
+            });
         
         app.controller('TestController', function($scope) {
             $scope.hoge = "hoge";
+        });
+        
+        // 商品一覧コントローラ
+        var _selectedItemList; // TODO:微妙。コンビニ一覧コントローラと同じ問題
+        var _itemSearchCondition; // TODO:微妙。コンビニ一覧コントローラと同じ問題
+        app.controller('itemController', function($scope) {   
+            // $scope初期化
+           //alert("商品一覧コントローラ");
+            // 商品一覧
+            //$scope.itemList = _selectedItemList;
+            this.itemList = _selectedItemList;
+            // 商品の検索条件、ソート条件
+            //$scope.searchCond = _itemSearchCondition;
+            this.searchCond = _itemSearchCondition;
+            
+            
+
+            
+            
+            //$scope.dialogs = {};
+
+            $scope.showSortDialog = function() {
+                // ダイアログを表示
+                document.getElementById('sort-dialog').show();
+            }
+            
+            
+
+            $scope.sortClick = function(btnNum) {
+                // 商品情報をDBから取得し、取得に成功したら画面更新
+                var itemSearchCond = new ItemSearchCond(
+                    _itemSearchCondition.shopId, // 選択されたコンビニはそのまま
+                    _itemSearchCondition.classId, // 選択された商品分類はそのまま
+                    btnNum
+                    );
+                    
+                selectItemList(itemSearchCond, function(selectedItemList) {
+                    _selectedItemList = selectedItemList;
+                    _itemSearchCondition = itemSearchCond;
+                    document.querySelector('#navigator').replacePage('itemlist.html', {animation: 'none', refresh:true});
+                });
+            }       
+            
+            // クレジットボタン押下
+            $scope.creditClick = function() {
+                // onsenを利用したダイアログ表示
+                ons.notification.confirm({
+                    title: "情報元",
+                    message: "セブンURL:xxxxx.com/xxxx<br/>情報更新日時：xxxx/xx/xx", // TODO:DBから値を取得して設定する
+                    buttonLabels: ["OK"],
+                });
+               
+            };
         });
         
         // nend広告表示用のディレクティブを定義する
@@ -71,6 +123,7 @@
             var page = event.target;
 
             if (page.matches('#home')) {
+                // ホーム画面
 
                 // コンビニ一覧画面に遷移
                 page.querySelector('#move_cvslist').onclick = function() {
@@ -82,32 +135,47 @@
                             }
                         }
                     };
-                    document.querySelector('#navigator').pushPage('cvslist.html', sendParam);
+                    
+                    // コンビニ情報をDBから取得し、取得に成功したらコンビニ一覧画面に遷移
+                    selectShopList(function(selectedShopList) {
+                        _selectedShopList = selectedShopList;
+                        document.querySelector('#navigator').pushPage('cvslist.html', sendParam);
+                    });
+                    
                 };
                 // 分類一覧画面に遷移
                 page.querySelector('#move_classlist').onclick = function() {
-                    document.querySelector('#navigator').pushPage('classlist.html');
+                    
+                    // コンビニ情報をDBから取得し、取得に成功したら商品分類一覧画面に遷移
+                    selectClassList(function(selectedClassList) {
+                        _selectedClassList = selectedClassList;
+                        document.querySelector('#navigator').pushPage('classlist.html');
+                    });
+                    
                 };
             } else if (page.matches('#cvslist')) {
-                alert("data=" + page.data.item.name + ":" + page.data.item.value);
+                // コンビニ一覧画面
+                
                 // コンビニ選択時に商品一覧画面に遷移
                 var cvslist = document.getElementsByClassName("cvs_item");
                 for(var i = 0; i < cvslist.length; i++){
-                    cvslist[i].onclick = function() {
-                        document.querySelector('#navigator').pushPage('itemlist.html');
-                    };
+                    // コンビニのクリックイベント設定
+                    setShopClickEvent(cvslist[i]);
                 }
                 
             } else if (page.matches('#classlist')) {
+                // 商品分類一覧画面
+                
                 // 分類選択時に商品一覧画面に遷移
                 var classlist = document.getElementsByClassName("class_item");
                 for(var i = 0; i < classlist.length; i++){
-                    classlist[i].onclick = function() {
-                        document.querySelector('#navigator').pushPage('itemlist.html');
-                    };
+                    // 分類のクリックイベント設定
+                    setClassClickEvent(classlist[i]);
                 }
                 
             } else if (page.matches('#itemlist')) {
+                // 商品一覧画面
+                
                 // 商品選択時にポップアップ画面を表示
                 var itemList = document.getElementsByClassName("product_item");
                 for(var i = 0; i < itemList.length; i++) {
@@ -121,6 +189,7 @@
                                     callback: function(index) {
                                         // 押されたボタンを表示
                                         ons.notification.alert({ message: "押したボタン：" + index });
+                                        
                                     }
                                 });
                             };
@@ -148,6 +217,53 @@
                 }
             }
         });
+        
+        /**
+         * コンビニのクリックイベント設定
+         * @param listItem ons-list-itemタグ
+         */ 
+        function setShopClickEvent(listItem) {
+            var cvsid = listItem.getAttribute("cvsid");// cvsid属性に企業IDが設定されている
+            listItem.onclick = function() {
+                // コンビニクリックイベント
+                
+                var itemSearchCond = new ItemSearchCond(
+                    cvsid, // cvsid属性に企業IDが設定されている
+                    null, // コンビニ一覧画面から商品一覧画面に遷移するときは商品分類では絞りこまない
+                    0 // コンビニ一覧画面から商品一覧画面に遷移するときはデフォルトソート
+                    );
+                // 商品情報をDBから取得し、取得に成功したら商品一覧画面に遷移
+                selectItemList(itemSearchCond, function(selectedItemList) {
+                    _selectedItemList = selectedItemList;
+                    _itemSearchCondition = itemSearchCond;
+                    document.querySelector('#navigator').pushPage('itemlist.html');
+                });
+            };
+        }
+        
+        /**
+         * 商品分類のクリックイベント設定
+         * @param listItem ons-list-itemタグ
+         */ 
+        function setClassClickEvent(listItem) {
+            var classid = listItem.getAttribute("classid"); // classid属性に分類IDが設定されている
+            listItem.onclick = function() {
+                // 商品分類クリックイベント
+
+                var itemSearchCond = new ItemSearchCond(
+                    null, // 商品分類一覧画面から商品一覧画面に遷移するときはコンビニでは絞りこまない
+                    classid, // classid属性に分類IDが設定されている
+                    0 // 商品分類一覧画面から商品一覧画面に遷移するときはデフォルトソート
+                    );
+                // 商品情報をDBから取得し、取得に成功したら商品一覧画面に遷移
+                selectItemList(itemSearchCond, function(selectedItemList) {
+                    _selectedItemList = selectedItemList;
+                    _itemSearchCondition = itemSearchCond;
+                    document.querySelector('#navigator').pushPage('itemlist.html');
+                });
+                
+            };
+        }
     </script>
 </head>
 
@@ -160,12 +276,11 @@
     <!-- ホーム画面 -->
     <template id="home.html">
         <ons-page id="home">
-            {{1+1}}
             <!--<ons-toolbar>
                 <div class="center">ホーム</div>
             </ons-toolbar>-->
             <div style="width:90vw; margin:auto;"> 
-                <img src="img/home.png" alt="" style="width:100%;margin-top:20px;" />
+                <img src="img/walk.gif" alt="" style="width:100%;margin-top:20px;" />
                 <ons-button id="move_cvslist" modifier="large" style="margin-top:20px;">コンビニから探す</ons-button>
                 <ons-button id="move_classlist" modifier="large" style="margin-top:20px;">分類から探す</ons-button>
             </div>
@@ -175,31 +290,14 @@
 
     <!-- 商品分類一覧画面 -->
     <template id="classlist.html">
-        <ons-page id="classlist" ng-controller="TestController">
-            {{hoge}}
-            <span ng-bind="hoge"></span>
+        <ons-page id="classlist" ng-controller="classController as ctrl">
             <ons-toolbar>
                 <div class="left"><ons-back-button></ons-back-button></div>
                 <div class="center">商品分類一覧</div>
             </ons-toolbar>
             <ons-list>
-                <ons-list-item tappable class="class_item">
-                    <div style="width:100%; text-align:center;">お弁当</div>
-                </ons-list-item>
-                <ons-list-item tappable class="class_item">
-                    <div style="width:100%; text-align:center;">おつまみ</div>
-                </ons-list-item>
-                <ons-list-item tappable class="class_item">
-                    <div style="width:100%; text-align:center;">お酒</div>
-                </ons-list-item>
-                <ons-list-item tappable class="class_item">
-                    <div style="width:100%; text-align:center;">飲み物</div>
-                </ons-list-item>
-                <ons-list-item tappable class="class_item">
-                    <div style="width:100%; text-align:center;">お菓子</div>
-                </ons-list-item>
-                <ons-list-item tappable class="class_item">
-                    <div style="width:100%; text-align:center;">サラダ</div>
+                <ons-list-item tappable class="class_item" ng-repeat="item in ctrl.items" classid="{{item.id}}">
+                    <div style="width:100%; text-align:center;">{{item.name}}</div>
                 </ons-list-item>
             </ons-list>
         </ons-page>
@@ -207,58 +305,34 @@
     
     <!-- 商品一覧画面 -->
     <template id="itemlist.html">
-        <ons-page id="itemlist">
+        <ons-page id="itemlist" ng-controller="itemController as ctrl">
             <ons-toolbar>
                 <div class="left"><ons-back-button></ons-back-button></div>
                 <div class="center">商品一覧</div>
+                <div class="right">
+                    <ons-toolbar-button ng-click="showSortDialog()">
+                        <ons-icon icon="ion-arrow-swap"></ons-icon>
+                    </ons-toolbar-button>
+                    <ons-toolbar-button ng-click="creditClick()">
+                        <ons-icon icon="ion-information"></ons-icon>
+                    </ons-toolbar-button>
+                </div>
             </ons-toolbar>
             
             <ons-list>
-                <ons-list-item tappable class="product_item">
+                <ons-list-item tappable class="product_item" ng-repeat="item in ctrl.itemList">
                     <table>
                         <tr>
-                            <td rowspan="3" style="width:20vw;"><img src="img/item/bento.png" style="width:20vw;"/></td>
-                            <td colspan="2" style="width:70vw;">おいしいお弁当</td>
-                            <td style="width:10vw;"><img src="img/cvs/lawson.png" style="width:10vw;"></td>
+                            <td rowspan="3" style="width:20vw;"><img src="{{item.icon}}" style="width:20vw;"/></td>
+                            <td colspan="2" style="width:70vw;">{{item.name}}</td>
+                            <td style="width:10vw;"><img src="{{item.shop_icon}}" style="width:10vw;"></td>
                         </tr>
                         <tr>
-                        	<td style="width:40vw;">1000.0kcal</td>
-                            <td colspan="2" rowspan="2">30.0g</td>
+                        	<td style="width:40vw;">{{item.calorie}}kcal</td>
+                            <td colspan="2" rowspan="2">{{item.glucide}}g</td>
                     	</tr>
                         <tr>
-                            <td>600円</td>
-                    	</tr>
-                    </table>
-                </ons-list-item>
-                <ons-list-item tappable class="product_item">
-                    <table>
-                        <tr>
-                            <td rowspan="3" style="width:20vw;"><img src="img/item/bread.png" style="width:20vw;"/></td>
-                            <td colspan="2" style="width:70vw;">おいしいおパン</td>
-                            <td style="width:10vw;"><img src="img/cvs/seveneleven.png" style="width:10vw;"></td>
-                    	</tr>
-                        <tr>
-                        	<td style="width:40vw;">800.0kcal</td>
-                            <td colspan="2" rowspan="2">20.0g</td>
-                    	</tr>
-                        <tr>
-                            <td>400円</td>
-                    	</tr>
-                    </table>
-                </ons-list-item>
-                <ons-list-item tappable class="product_item">
-                    <table>
-                        <tr>
-                    		<td rowspan="3" style="width:20vw;"><img src="img/item/drink.png" style="width:20vw;"/></td>
-                            <td colspan="2" style="width:70vw;">ダイエットドリンク</td>
-                            <td style="width:10vw;"><img src="img/cvs/ministop.png" style="width:10vw;"></td>
-                    	</tr>
-                        <tr>
-                        	<td style="width:40vw;">0.0kcal</td>
-                            <td colspan="2" rowspan="2">10.0g</td>
-                    	</tr>
-                        <tr>
-                            <td>200円</td>
+                            <td>{{item.price}}円</td>
                     	</tr>
                     </table>
                 </ons-list-item>
@@ -270,8 +344,31 @@
               <ons-action-sheet-button class="dialog_btn" modifier="destructive" icon="md-square-o">Action 3</ons-action-sheet-button>
               <ons-action-sheet-button class="dialog_btn" icon="md-square-o">Cancel</ons-action-sheet-button>
             </ons-action-sheet>
+            
+            <!-- ダイアログ表示用 -->
+            <ons-dialog id="sort-dialog" var="sortDialog" cancelable>
+                <ons-list>
+                    <ons-list-header>並び順</ons-list-header>
+                    <ons-list-item>
+                        <span style="width:80px;">糖質</span>
+                        <ons-button ng-click="sortClick(1)">昇順</ons-button>
+                        <ons-button ng-click="sortClick(2)">降順</ons-button>
+                    </ons-list-item>
+                    <ons-list-item>
+                        <span style="width:80px;">カロリー</span>
+                        <ons-button ng-click="sortClick(3)">昇順</ons-button>
+                        <ons-button ng-click="sortClick(4)">降順</ons-button>
+                    </ons-list-item>
+                    <ons-list-item>
+                        <span style="width:80px;">値段</span>
+                        <ons-button ng-click="sortClick(5)">昇順</ons-button>
+                        <ons-button ng-click="sortClick(6)">降順</ons-button>
+                    </ons-list-item>
+                </ons-list>
+            </ons-dialog>
         </ons-page>
     </template>
+
 
 </body>
 
